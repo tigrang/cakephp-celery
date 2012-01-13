@@ -2,5 +2,7 @@
 
 class Task extends AppModel {
 
-    var $useDbConfig = 'rabbitMQ';
+    public $useTable = false;
+
+    public $useDbConfig = 'rabbitMQ';
 }

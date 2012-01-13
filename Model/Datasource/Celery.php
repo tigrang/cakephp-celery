@@ -2,17 +2,18 @@
 App::uses('AMQP', 'AMQP.Model/Datasource');
 class Celery extends AMQP {
 
-    public function publish($type, $task, $args, $extras=array()) {
+    public function publish($routingKey, $task, $args, $extras = array()) {
         $this->connect();
-		if (!in_array($type, $this->config['types']) &&
+		if (!in_array($routingKey, $this->config['types']) &&
             $this->config['types'] !== array('*')) {
 			return false;
 		}
 
+        $messageId = uniqid('Task_');
         $message = array(
-            'id' => uniqid('Task_'),
+            'id' => $messageId,
             'task' => $task,
-            'args' => $args,
+            'args' => array(json_encode($args)),
             'kwargs' => (object)array(),
         );
         $message = json_encode(array_merge($message, $extras));
@@ -22,10 +23,14 @@ class Celery extends AMQP {
             'immediate' => false,
         );
 
-		$result = $this->_exchange->publish($message, $type, 0, $params);
+        $result = $this->_exchange->publish($message, $routingKey, 0, $params);
         $this->disconnect();
 
-        return $result;
+        if ($result) {
+            return $messageId;
+        }
+
+        return false;
     }
 
 }
